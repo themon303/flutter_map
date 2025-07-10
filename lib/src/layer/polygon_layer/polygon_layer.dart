@@ -1,10 +1,11 @@
+import 'dart:math' as math;
 import 'dart:math';
 import 'dart:ui';
 
 import 'package:collection/collection.dart';
 import 'package:dart_earcut/dart_earcut.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map/src/layer/shared/feature_layer_utils.dart';
 import 'package:flutter_map/src/layer/shared/layer_interactivity/internal_hit_detectable.dart';
@@ -55,8 +56,7 @@ enum PolygonPainterFillMethod {
 
 /// A polygon layer for [FlutterMap].
 @immutable
-base class PolygonLayer<R extends Object>
-    extends ProjectionSimplificationManagementSupportedWidget {
+base class PolygonLayer<R extends Object> extends ProjectionSimplificationManagementSupportedWidget {
   /// [Polygon]s to draw
   final List<Polygon<R>> polygons;
 
@@ -131,6 +131,10 @@ base class PolygonLayer<R extends Object>
 
   /// {@macro fm.lhn.layerHitNotifier.usage}
   final LayerHitNotifier<R>? hitNotifier;
+  final bool hatchFill;
+  final Color? hatchColor;
+  final double hatchSpacing;
+  final double hatchAngle;
 
   /// Create a new [PolygonLayer] for the [FlutterMap] widget.
   const PolygonLayer({
@@ -142,11 +146,13 @@ base class PolygonLayer<R extends Object>
     this.polygonLabels = true,
     this.drawLabelsLast = false,
     this.drawInSingleWorld = false,
-    this.painterFillMethod = kIsWeb
-        ? PolygonPainterFillMethod.evenOdd
-        : PolygonPainterFillMethod.pathCombine,
+    this.painterFillMethod = kIsWeb ? PolygonPainterFillMethod.evenOdd : PolygonPainterFillMethod.pathCombine,
     this.invertedFill,
     this.hitNotifier,
+    this.hatchFill = false,
+    this.hatchColor,
+    this.hatchSpacing = 10.0,
+    this.hatchAngle = 0.0,
     super.simplificationTolerance,
   }) : super();
 
@@ -155,17 +161,12 @@ base class PolygonLayer<R extends Object>
 }
 
 class _PolygonLayerState<R extends Object> extends State<PolygonLayer<R>>
-    with
-        ProjectionSimplificationManagement<_ProjectedPolygon<R>, Polygon<R>,
-            PolygonLayer<R>> {
+    with ProjectionSimplificationManagement<_ProjectedPolygon<R>, Polygon<R>, PolygonLayer<R>> {
   @override
   void didUpdateWidget(covariant PolygonLayer<R> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (kDebugMode &&
-        kIsWeb &&
-        oldWidget.invertedFill == null &&
-        widget.invertedFill != null) {
+    if (kDebugMode && kIsWeb && oldWidget.invertedFill == null && widget.invertedFill != null) {
       Logger(printer: PrettyPrinter(methodCount: 0)).w(
         '\x1B[1m\x1B[3mflutter_map\x1B[0m\nOn the web, inverted filling may '
         'not work as expected in some cases. It will not match the behaviour\n'
@@ -237,21 +238,17 @@ class _PolygonLayerState<R extends Object> extends State<PolygonLayer<R>>
 
               final points = culledPolygon.holePoints.isEmpty
                   ? culledPolygon.points
-                  : culledPolygon.points
-                      .followedBy(culledPolygon.holePoints.expand((e) => e));
+                  : culledPolygon.points.followedBy(culledPolygon.holePoints.expand((e) => e));
 
               return Earcut.triangulateRaw(
                 List.generate(
                   points.length * 2,
-                  (ii) => ii.isEven
-                      ? points.elementAt(ii ~/ 2).dx
-                      : points.elementAt(ii ~/ 2).dy,
+                  (ii) => ii.isEven ? points.elementAt(ii ~/ 2).dx : points.elementAt(ii ~/ 2).dy,
                   growable: false,
                 ),
                 holeIndices: culledPolygon.holePoints.isEmpty
                     ? null
-                    : _generateHolesIndices(culledPolygon)
-                        .toList(growable: false),
+                    : _generateHolesIndices(culledPolygon).toList(growable: false),
               );
             },
             growable: false,
@@ -269,6 +266,10 @@ class _PolygonLayerState<R extends Object> extends State<PolygonLayer<R>>
           invertedFill: widget.invertedFill,
           debugAltRenderer: widget.debugAltRenderer,
           hitNotifier: widget.hitNotifier,
+          hatchFill: widget.hatchFill,
+          hatchColor: widget.hatchColor,
+          hatchSpacing: widget.hatchSpacing,
+          hatchAngle: widget.hatchAngle,
         ),
         size: camera.size,
       ),

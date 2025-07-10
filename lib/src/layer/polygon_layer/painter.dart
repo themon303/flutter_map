@@ -20,19 +20,9 @@ class _PolygonPainter<R extends Object> extends CustomPainter
   final LatLngBounds bounds;
 
   /// Whether to draw per-polygon labels ([Polygon.label])
-  ///
-  /// Note that drawing labels will reduce performance, as the internal
-  /// canvas must be drawn to and 'saved' more frequently to ensure the proper
-  /// stacking order is maintained. This can be avoided, potentially at the
-  /// expense of appearance, by setting [PolygonLayer.drawLabelsLast].
-  ///
-  /// It is safe to ignore this property, and the performance pitfalls described
-  /// above, if no [Polygon]s have labels specified.
   final bool polygonLabels;
 
   /// Whether to draw labels last and thus over all the polygons
-  ///
-  /// This may improve performance: see [polygonLabels] for more information.
   final bool drawLabelsLast;
 
   /// See [PolygonLayer.debugAltRenderer]
@@ -43,6 +33,18 @@ class _PolygonPainter<R extends Object> extends CustomPainter
 
   /// See [PolygonLayer.invertedFill]
   final Color? invertedFill;
+
+  /// Whether to fill polygons with a hatch (line) pattern instead of solid color
+  final bool hatchFill;
+
+  /// Color of the hatch lines (defaults to borderColor if not set)
+  final Color? hatchColor;
+
+  /// Spacing between hatch lines in logical pixels
+  final double hatchSpacing;
+
+  /// Angle of hatch lines in radians
+  final double hatchAngle;
 
   @override
   final MapCamera camera;
@@ -61,28 +63,19 @@ class _PolygonPainter<R extends Object> extends CustomPainter
     required this.painterFillMethod,
     required this.invertedFill,
     required this.hitNotifier,
+    this.hatchFill = false,
+    this.hatchColor,
+    this.hatchSpacing = 10.0,
+    this.hatchAngle = 0.0,
   }) : bounds = camera.visibleBounds {
     _helper = OffsetHelper(camera: camera);
   }
 
   late final OffsetHelper _helper;
 
-  /// Corner coordinates of the polygon painted onto the entire world when using
-  /// inverted fill.
   static const _minMaxLatitude = [LatLng(90, 0), LatLng(-90, 0)];
-
-  /// Do we remove the holes from the inverted map?
-  /// Should be `true`.
   static const _invertedHoles = true;
-
-  /// Do we also fill the holes with inverted fill?
-  /// Should be `true`.
   static const _fillInvertedHoles = true;
-
-  /// Whether to draw the batch of polygons when a polygon with translucency is
-  /// encountered.
-  /// Should be `true`.
-  // TODO: Verify if still necessary.
   static const _flushBatchOnTranslucency = true;
 
   @override
@@ -91,13 +84,6 @@ class _PolygonPainter<R extends Object> extends CustomPainter
     required Offset point,
     required LatLng coordinate,
   }) {
-    // TODO: We should check the bounding box here, for efficiency
-    // However, we need to account for map rotation
-    //
-    // if (!polygon.boundingBox.contains(touch)) {
-    //   continue;
-    // }
-
     WorldWorkControl checkIfHit(double shift) {
       final (projectedCoords, _) = _helper.getOffsetsXY(
         points: projectedPolygon.points,
@@ -112,8 +98,7 @@ class _PolygonPainter<R extends Object> extends CustomPainter
       }
 
       final isValidPolygon = projectedCoords.length >= 3;
-      final isInPolygon =
-          isValidPolygon && isPointInPolygon(point, projectedCoords);
+      final isInPolygon = isValidPolygon && isPointInPolygon(point, projectedCoords);
 
       final isInHole = projectedPolygon.holePoints.any(
         (points) {
@@ -126,16 +111,11 @@ class _PolygonPainter<R extends Object> extends CustomPainter
           }
 
           final isValidHolePolygon = projectedHoleCoords.length >= 3;
-          return isValidHolePolygon &&
-              isPointInPolygon(point, projectedHoleCoords);
+          return isValidHolePolygon && isPointInPolygon(point, projectedHoleCoords);
         },
       );
 
-      // Second check handles case where polygon outline intersects a hole,
-      // ensuring that the hit matches with the visual representation
-      return (isInPolygon && !isInHole) || (!isInPolygon && isInHole)
-          ? WorldWorkControl.hit
-          : WorldWorkControl.visible;
+      return (isInPolygon && !isInHole) || (!isInPolygon && isInHole) ? WorldWorkControl.hit : WorldWorkControl.visible;
     }
 
     return workAcrossWorlds(checkIfHit);
@@ -154,7 +134,6 @@ class _PolygonPainter<R extends Object> extends CustomPainter
     int? lastHash;
     Paint? borderPaint;
 
-    /// Draw polygon outline
     void drawBorders() {
       if (borderPaint != null) {
         canvas.drawPath(borderPath, borderPaint);
@@ -163,7 +142,26 @@ class _PolygonPainter<R extends Object> extends CustomPainter
       lastHash = null;
     }
 
-    // This functions flushes the batched fill and border paths constructed below
+    void drawHatchPattern(Canvas canvas, Path path, Color color, double spacing, double angle) {
+      final bounds = path.getBounds();
+      final paint = Paint()
+        ..color = color
+        ..strokeWidth = 1.0;
+      final double sinA = math.sin(angle);
+      final double cosA = math.cos(angle);
+      for (double d = -bounds.height - bounds.width; d < bounds.width + bounds.height; d += spacing) {
+        final Offset p1 = Offset(bounds.left + d * cosA, bounds.top + d * sinA);
+        final Offset p2 = Offset(bounds.right + d * cosA, bounds.bottom + d * sinA);
+        final Path linePath = Path()
+          ..moveTo(p1.dx, p1.dy)
+          ..lineTo(p2.dx, p2.dy);
+        canvas.save();
+        canvas.clipPath(path);
+        canvas.drawPath(linePath, paint);
+        canvas.restore();
+      }
+    }
+
     void drawPaths() {
       final Color? color = lastColor;
       if (color == null) {
@@ -171,7 +169,6 @@ class _PolygonPainter<R extends Object> extends CustomPainter
         return;
       }
 
-      // Draw filled polygon
       final paint = Paint()
         ..style = PaintingStyle.fill
         ..color = color;
@@ -228,8 +225,15 @@ class _PolygonPainter<R extends Object> extends CustomPainter
             );
           }
         }
+        if (hatchFill) {
+          drawHatchPattern(canvas, filledPath, hatchColor ?? (lastColor ?? Colors.black), hatchSpacing, hatchAngle);
+        }
       } else {
-        canvas.drawPath(filledPath, paint);
+        if (hatchFill) {
+          drawHatchPattern(canvas, filledPath, hatchColor ?? (lastColor ?? Colors.black), hatchSpacing, hatchAngle);
+        } else {
+          canvas.drawPath(filledPath, paint);
+        }
       }
 
       trianglePoints.clear();
@@ -240,7 +244,6 @@ class _PolygonPainter<R extends Object> extends CustomPainter
       drawBorders();
     }
 
-    /// Draws labels on a "single-world"
     WorldWorkControl drawLabelIfVisible(
       double shift,
       _ProjectedPolygon<R> projectedPolygon,
@@ -260,7 +263,6 @@ class _PolygonPainter<R extends Object> extends CustomPainter
       );
       if (painter == null) return WorldWorkControl.invisible;
 
-      // Flush the batch before painting to preserve stacking.
       drawPaths();
 
       painter(canvas);
@@ -268,8 +270,6 @@ class _PolygonPainter<R extends Object> extends CustomPainter
     }
 
     void invertFillPolygonHole(List<Offset> offsets) {
-      // For debugging purposes, should be compiled out
-      // ignore: dead_code
       if (!_fillInvertedHoles) return;
 
       if (painterFillMethod == PolygonPainterFillMethod.evenOdd) {
@@ -296,12 +296,10 @@ class _PolygonPainter<R extends Object> extends CustomPainter
       );
     }
 
-    // Specific map treatment with `invertFill`.
     if (invertedFill != null) {
       filledPath.reset();
       final minMaxProjected = camera.crs.projection.projectList(
         _minMaxLatitude,
-        // ignore: avoid_redundant_argument_values
         projectToSingleWorld: false,
       );
       final (minMaxY, _) = _helper.getOffsetsXY(
@@ -318,7 +316,6 @@ class _PolygonPainter<R extends Object> extends CustomPainter
         final projectedPolygon = polygons[i];
         if (projectedPolygon.points.isEmpty) continue;
 
-        /// Draws each full polygon as a hole on a "single-world"
         WorldWorkControl drawPolygonAsHole(double shift) {
           final (fillOffsets, _) = _helper.getOffsetsXY(
             points: projectedPolygon.points,
@@ -346,7 +343,6 @@ class _PolygonPainter<R extends Object> extends CustomPainter
         workAcrossWorlds(drawPolygonAsHole);
       }
 
-      // Draw filled map with polygons as holes
       final paint = Paint()
         ..style = PaintingStyle.fill
         ..color = invertedFill!;
@@ -367,12 +363,10 @@ class _PolygonPainter<R extends Object> extends CustomPainter
 
       final polygonTriangles = triangles?[i];
 
-      /// Draws on a "single-world"
       WorldWorkControl drawIfVisible(double shift) {
         final (fillOffsets, addedWorldWidthForHoles) = _helper.getOffsetsXY(
           points: projectedPolygon.points,
-          holePoints:
-              polygonTriangles != null ? projectedPolygon.holePoints : null,
+          holePoints: polygonTriangles != null ? projectedPolygon.holePoints : null,
           shift: shift,
         );
         if (!areOffsetsVisible(fillOffsets)) {
@@ -398,22 +392,14 @@ class _PolygonPainter<R extends Object> extends CustomPainter
           }
         }
 
-        // The hash is based on the polygons visual properties. If the hash from
-        // the current and the previous polygon no longer match, we need to flush
-        // the batch previous polygons.
-        // We also need to flush if the opacity is not 1 or 0, so that they get
-        // mixed properly. Otherwise, holes get cut, or colors aren't mixed,
-        // depending on the holes handler.
         final hash = polygon.renderHashCode;
         final opacity = polygon.color?.a ?? 0;
-        if (lastHash != hash ||
-            (_flushBatchOnTranslucency && opacity > 0 && opacity < 1)) {
+        if (lastHash != hash || (_flushBatchOnTranslucency && opacity > 0 && opacity < 1)) {
           drawPaths();
         }
         lastColor = polygon.color;
         lastHash = hash;
 
-        // First add fills and borders to path.
         if (polygon.color != null) {
           if (polygonTriangles != null) {
             final len = polygonTriangles.length;
@@ -443,10 +429,6 @@ class _PolygonPainter<R extends Object> extends CustomPainter
               .$1);
         }
 
-        // Afterwards deal with more complicated holes.
-        // Improper handling of opacity and fill methods may result in normal
-        // polygons cutting holes into other polygons, when they should be mixing:
-        // https://github.com/fleaflet/flutter_map/issues/1898.
         for (final singleHolePoints in projectedPolygon.holePoints) {
           final (holeOffsets, _) = _helper.getOffsetsXY(
             points: singleHolePoints,
@@ -465,15 +447,6 @@ class _PolygonPainter<R extends Object> extends CustomPainter
       workAcrossWorlds(drawIfVisible);
 
       if (!drawLabelsLast && polygonLabels && polygon.textPainter != null) {
-        // Labels are expensive because:
-        //  * they themselves cannot easily be pulled into our batched path
-        //    painting with the given text APIs
-        //  * therefore, they require us to flush the batch of polygon draws to
-        //    ensure polygons and labels are stacked correctly, i.e.:
-        //    p1, p1_label, p2, p2_label, ... .
-
-        // The painter will be null if the layOuting algorithm determined that
-        // there isn't enough space.
         workAcrossWorlds(
           (double shift) => drawLabelIfVisible(shift, projectedPolygon),
         );

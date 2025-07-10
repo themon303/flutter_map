@@ -4,7 +4,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_example/misc/tile_providers.dart';
 import 'package:flutter_map_example/widgets/drawer/menu_drawer.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 typedef HitValue = ({String title, String subtitle});
 
@@ -150,9 +149,7 @@ class _PolygonPageState extends State<PolygonPage> {
         LatLng(51.5, -12.5),
         LatLng(54, -14),
         LatLng(54, -18),
-      ]
-          .map((latlng) => LatLng(latlng.latitude - 6, latlng.longitude + 8))
-          .toList(),
+      ].map((latlng) => LatLng(latlng.latitude - 6, latlng.longitude + 8)).toList(),
       pattern: const StrokePattern.dotted(),
       holePointsList: [
         const [
@@ -202,8 +199,7 @@ class _PolygonPageState extends State<PolygonPage> {
       borderStrokeWidth: 10,
       hitValue: (
         title: 'Testing opacity treatment (small)',
-        subtitle:
-            "Holes shouldn't be cut, and colors should be mixed correctly",
+        subtitle: "Holes shouldn't be cut, and colors should be mixed correctly",
       ),
     ),
     Polygon(
@@ -249,8 +245,7 @@ class _PolygonPageState extends State<PolygonPage> {
       borderStrokeWidth: 10,
       hitValue: (
         title: 'Testing opacity treatment (large)',
-        subtitle:
-            "Holes shouldn't be cut, and colors should be mixed correctly",
+        subtitle: "Holes shouldn't be cut, and colors should be mixed correctly",
       ),
     ),
     Polygon(
@@ -283,8 +278,7 @@ class _PolygonPageState extends State<PolygonPage> {
       ),
     ),
   ];
-  late final _polygons =
-      Map.fromEntries(_polygonsRaw.map((e) => MapEntry(e.hitValue, e)));
+  late final _polygons = Map.fromEntries(_polygonsRaw.map((e) => MapEntry(e.hitValue, e)));
 
   @override
   Widget build(BuildContext context) {
@@ -347,8 +341,8 @@ class _PolygonPageState extends State<PolygonPage> {
                   child: PolygonLayer(
                     hitNotifier: _hitNotifier,
                     simplificationTolerance: 0,
-                    invertedFill:
-                        _useInvertedFill ? Colors.pink.withAlpha(170) : null,
+                    invertedFill: _useInvertedFill ? Colors.pink.withAlpha(170) : null,
+                    hatchFill: true,
                     polygons: [..._polygonsRaw, ...?_hoverGons],
                   ),
                 ),
@@ -356,49 +350,49 @@ class _PolygonPageState extends State<PolygonPage> {
               PolygonLayer(
                 simplificationTolerance: 0,
                 useAltRendering: true,
+                hatchFill: true,
                 polygons: [
-                  Polygon(
-                    points: const [
-                      LatLng(51.5, -122),
-                      LatLng(50, -123),
-                      LatLng(50, -121),
-                    ],
-                    borderStrokeWidth: 3,
-                    borderColor: Colors.red,
-                    color: Colors.orange,
-                    label: 'Culling tester',
-                  ),
-                  Polygon(
-                    points: const [
-                      LatLng(50, -18),
-                      LatLng(50, -14),
-                      LatLng(51.5, -12.5),
-                      LatLng(54, -14),
-                      LatLng(54, -18),
-                    ],
-                    holePointsList: [
-                      const [
-                        LatLng(52, -17),
-                        LatLng(52, -16),
-                        LatLng(51.5, -15.5),
-                        LatLng(51, -16),
-                        LatLng(51, -17),
-                      ],
-                      const [
-                        LatLng(53.5, -17),
-                        LatLng(53.5, -16),
-                        LatLng(53, -15),
-                        LatLng(52.25, -15),
-                        LatLng(52.25, -16),
-                        LatLng(52.75, -17),
-                      ],
-                    ],
-                    borderStrokeWidth: 4,
-                    borderColor: Colors.black,
-                    color: Colors.green,
-                    label:
-                        'This one is performantly rendered\n& non-interactive',
-                  ),
+                  // Polygon(
+                  //   points: const [
+                  //     LatLng(51.5, -122),
+                  //     LatLng(50, -123),
+                  //     LatLng(50, -121),
+                  //   ],
+                  //   borderStrokeWidth: 3,
+                  //   borderColor: Colors.red,
+                  //   color: Colors.orange,
+                  //   label: 'Culling tester',
+                  // ),
+                  // Polygon(
+                  //   points: const [
+                  //     LatLng(50, -18),
+                  //     LatLng(50, -14),
+                  //     LatLng(51.5, -12.5),
+                  //     LatLng(54, -14),
+                  //     LatLng(54, -18),
+                  //   ],
+                  //   holePointsList: [
+                  //     const [
+                  //       LatLng(52, -17),
+                  //       LatLng(52, -16),
+                  //       LatLng(51.5, -15.5),
+                  //       LatLng(51, -16),
+                  //       LatLng(51, -17),
+                  //     ],
+                  //     const [
+                  //       LatLng(53.5, -17),
+                  //       LatLng(53.5, -16),
+                  //       LatLng(53, -15),
+                  //       LatLng(52.25, -15),
+                  //       LatLng(52.25, -16),
+                  //       LatLng(52.75, -17),
+                  //     ],
+                  //   ],
+                  //   borderStrokeWidth: 4,
+                  //   borderColor: Colors.black,
+                  //   color: Colors.green,
+                  //   label: 'This one is performantly rendered\n& non-interactive',
+                  // ),
                   Polygon(
                     points: const [
                       LatLng(44, -18),
@@ -432,117 +426,114 @@ class _PolygonPageState extends State<PolygonPage> {
                     borderStrokeWidth: 4,
                     borderColor: Colors.black,
                     color: Colors.green,
-                    label:
-                        "Performant-rendering doesn't\nhandle malformed polygons",
+                    label: "Performant-rendering doesn't\nhandle malformed polygons",
                   ),
                 ],
               ),
-              IgnorePointer(
-                // Ignore the marker so it doesn't capture the pointer
-                // (as the marker is over the pointer)
-                child: ValueListenableBuilder(
-                  valueListenable: _hitNotifier,
-                  builder: (context, value, _) => MarkerLayer(
-                    rotate: true,
-                    markers: [
-                      if (value != null)
-                        Marker(
-                          height: 22,
-                          width: 24,
-                          alignment: Alignment.topCenter,
-                          point: value.coordinate,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  blurRadius: 15,
-                                  spreadRadius: 5,
-                                  color: Colors.black.withAlpha(255 ~/ 3),
-                                  offset: const Offset(0, 11),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.location_on,
-                              color: Colors.green,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
+              // IgnorePointer(
+              //   // Ignore the marker so it doesn't capture the pointer
+              //   // (as the marker is over the pointer)
+              //   child: ValueListenableBuilder(
+              //     valueListenable: _hitNotifier,
+              //     builder: (context, value, _) => MarkerLayer(
+              //       rotate: true,
+              //       markers: [
+              //         if (value != null)
+              //           Marker(
+              //             height: 22,
+              //             width: 24,
+              //             alignment: Alignment.topCenter,
+              //             point: value.coordinate,
+              //             child: DecoratedBox(
+              //               decoration: BoxDecoration(
+              //                 shape: BoxShape.circle,
+              //                 boxShadow: [
+              //                   BoxShadow(
+              //                     blurRadius: 15,
+              //                     spreadRadius: 5,
+              //                     color: Colors.black.withAlpha(255 ~/ 3),
+              //                     offset: const Offset(0, 11),
+              //                   ),
+              //                 ],
+              //               ),
+              //               child: const Icon(
+              //                 Icons.location_on,
+              //                 color: Colors.green,
+              //               ),
+              //             ),
+              //           ),
+              //       ],
+              //     ),
+              //   ),
+              // ),
             ],
           ),
-          Positioned(
-            top: 16,
-            right: 16,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(kIsWeb ? 16 : 32),
-              child: ColoredBox(
-                color: Theme.of(context).colorScheme.surface,
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 12,
-                        right: 8,
-                        top: 4,
-                        bottom: 4,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        spacing: 8,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Tooltip(
-                            message: 'Use Inverted Fill',
-                            child: Icon(Icons.invert_colors),
-                          ),
-                          Switch.adaptive(
-                            value: _useInvertedFill,
-                            onChanged: (v) =>
-                                setState(() => _useInvertedFill = v),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (kIsWeb)
-                      ColoredBox(
-                        color: Colors.amber,
-                        child: Padding(
-                          padding: const EdgeInsets.only(
-                            left: 16,
-                            right: 16,
-                            top: 6,
-                            bottom: 6,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            spacing: 8,
-                            children: [
-                              const Icon(Icons.warning),
-                              const Icon(Icons.web_asset_off),
-                              IconButton(
-                                onPressed: () => launchUrl(Uri.parse(
-                                  'https://docs.fleaflet.dev/layers/polygon-layer#inverted-filling',
-                                )),
-                                style: ButtonStyle(
-                                  backgroundColor:
-                                      WidgetStatePropertyAll(Colors.amber[100]),
-                                ),
-                                icon: const Icon(Icons.open_in_new),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          // Positioned(
+          //   top: 16,
+          //   right: 16,
+          //   child: ClipRRect(
+          //     borderRadius: BorderRadius.circular(kIsWeb ? 16 : 32),
+          //     child: ColoredBox(
+          //       color: Theme.of(context).colorScheme.surface,
+          //       child: Column(
+          //         children: [
+          //           Padding(
+          //             padding: const EdgeInsets.only(
+          //               left: 12,
+          //               right: 8,
+          //               top: 4,
+          //               bottom: 4,
+          //             ),
+          //             child: Row(
+          //               mainAxisSize: MainAxisSize.max,
+          //               spacing: 8,
+          //               mainAxisAlignment: MainAxisAlignment.center,
+          //               children: [
+          //                 const Tooltip(
+          //                   message: 'Use Inverted Fill',
+          //                   child: Icon(Icons.invert_colors),
+          //                 ),
+          //                 Switch.adaptive(
+          //                   value: _useInvertedFill,
+          //                   onChanged: (v) => setState(() => _useInvertedFill = v),
+          //                 ),
+          //               ],
+          //             ),
+          //           ),
+          //           if (kIsWeb)
+          //             ColoredBox(
+          //               color: Colors.amber,
+          //               child: Padding(
+          //                 padding: const EdgeInsets.only(
+          //                   left: 16,
+          //                   right: 16,
+          //                   top: 6,
+          //                   bottom: 6,
+          //                 ),
+          //                 child: Row(
+          //                   mainAxisSize: MainAxisSize.min,
+          //                   spacing: 8,
+          //                   children: [
+          //                     const Icon(Icons.warning),
+          //                     const Icon(Icons.web_asset_off),
+          //                     IconButton(
+          //                       onPressed: () => launchUrl(Uri.parse(
+          //                         'https://docs.fleaflet.dev/layers/polygon-layer#inverted-filling',
+          //                       )),
+          //                       style: ButtonStyle(
+          //                         backgroundColor: WidgetStatePropertyAll(Colors.amber[100]),
+          //                       ),
+          //                       icon: const Icon(Icons.open_in_new),
+          //                     ),
+          //                   ],
+          //                 ),
+          //               ),
+          //             ),
+          //         ],
+          //       ),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
