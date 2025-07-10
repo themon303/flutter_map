@@ -171,7 +171,7 @@ class _PolygonPainter<R extends Object> extends CustomPainter
 
       final paint = Paint()
         ..style = PaintingStyle.fill
-        ..color = color;
+        ..color = hatchFill ? Colors.transparent : color;
 
       if (trianglePoints.isNotEmpty) {
         final points = Float32List(trianglePoints.length * 2);
@@ -226,10 +226,12 @@ class _PolygonPainter<R extends Object> extends CustomPainter
           }
         }
         if (hatchFill) {
+          canvas.drawPath(filledPath, paint);
           drawHatchPattern(canvas, filledPath, hatchColor ?? (lastColor ?? Colors.black), hatchSpacing, hatchAngle);
         }
       } else {
         if (hatchFill) {
+          canvas.drawPath(filledPath, paint);
           drawHatchPattern(canvas, filledPath, hatchColor ?? (lastColor ?? Colors.black), hatchSpacing, hatchAngle);
         } else {
           canvas.drawPath(filledPath, paint);
