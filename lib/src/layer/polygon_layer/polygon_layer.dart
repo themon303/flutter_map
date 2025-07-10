@@ -135,6 +135,7 @@ base class PolygonLayer<R extends Object> extends ProjectionSimplificationManage
   final Color? hatchColor;
   final double hatchSpacing;
   final double hatchAngle;
+  final double? hatchStrokeWidth;
 
   /// Create a new [PolygonLayer] for the [FlutterMap] widget.
   const PolygonLayer({
@@ -153,6 +154,7 @@ base class PolygonLayer<R extends Object> extends ProjectionSimplificationManage
     this.hatchColor,
     this.hatchSpacing = 10.0,
     this.hatchAngle = 0.0,
+    this.hatchStrokeWidth,
     super.simplificationTolerance,
   }) : super();
 
@@ -270,6 +272,7 @@ class _PolygonLayerState<R extends Object> extends State<PolygonLayer<R>>
           hatchColor: widget.hatchColor,
           hatchSpacing: widget.hatchSpacing,
           hatchAngle: widget.hatchAngle,
+          hatchStrokeWidth: widget.hatchStrokeWidth,
         ),
         size: camera.size,
       ),

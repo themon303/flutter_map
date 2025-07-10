@@ -46,6 +46,8 @@ class _PolygonPainter<R extends Object> extends CustomPainter
   /// Angle of hatch lines in radians
   final double hatchAngle;
 
+  final double? hatchStrokeWidth;
+
   @override
   final MapCamera camera;
 
@@ -67,6 +69,7 @@ class _PolygonPainter<R extends Object> extends CustomPainter
     this.hatchColor,
     this.hatchSpacing = 10.0,
     this.hatchAngle = 0.0,
+    this.hatchStrokeWidth,
   }) : bounds = camera.visibleBounds {
     _helper = OffsetHelper(camera: camera);
   }
@@ -146,7 +149,7 @@ class _PolygonPainter<R extends Object> extends CustomPainter
       final bounds = path.getBounds();
       final paint = Paint()
         ..color = color
-        ..strokeWidth = 1.0;
+        ..strokeWidth = hatchStrokeWidth ?? 1.0;
       final double sinA = math.sin(angle);
       final double cosA = math.cos(angle);
       for (double d = -bounds.height - bounds.width; d < bounds.width + bounds.height; d += spacing) {
@@ -171,7 +174,7 @@ class _PolygonPainter<R extends Object> extends CustomPainter
 
       final paint = Paint()
         ..style = PaintingStyle.fill
-        ..color = hatchFill ? Colors.transparent : color;
+        ..color = color;
 
       if (trianglePoints.isNotEmpty) {
         final points = Float32List(trianglePoints.length * 2);
@@ -227,12 +230,12 @@ class _PolygonPainter<R extends Object> extends CustomPainter
         }
         if (hatchFill) {
           canvas.drawPath(filledPath, paint);
-          drawHatchPattern(canvas, filledPath, hatchColor ?? (lastColor ?? Colors.black), hatchSpacing, hatchAngle);
+          drawHatchPattern(canvas, filledPath, hatchColor ?? Colors.black, hatchSpacing, hatchAngle);
         }
       } else {
         if (hatchFill) {
           canvas.drawPath(filledPath, paint);
-          drawHatchPattern(canvas, filledPath, hatchColor ?? (lastColor ?? Colors.black), hatchSpacing, hatchAngle);
+          drawHatchPattern(canvas, filledPath, hatchColor ?? Colors.black, hatchSpacing, hatchAngle);
         } else {
           canvas.drawPath(filledPath, paint);
         }
